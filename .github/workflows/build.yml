@@ -56,21 +56,17 @@ jobs:
           python3 ${{ github.workspace }}/fix_config.py out/.config
           yes '' | make CC=aarch64-linux-android-gcc REAL_CC=aarch64-linux-android-gcc O=out ARCH=arm64 \
             CROSS_COMPILE=aarch64-linux-android- olddefconfig 2>&1 | tail -1
-          # Fix GCC 4.9 compatibility
+          # GCC 4.9 compatibility fixes
           sed -i '/^#elif$/s//#else/' kernel/taskstats.c 2>/dev/null || true
-          # Fix techpack/audio format warnings (GCC 4.9)
-          echo '# GCC 4.9 compat: disable -Werror for this subtree' >> techpack/audio/Makefile
+          echo '# GCC 4.9 compat: disable -Werror for subtree' >> techpack/audio/Makefile
           echo 'subdir-ccflags-y += -Wno-format -Wno-error=maybe-uninitialized' >> techpack/audio/Makefile
-          # Fix msm GPU case label errors (GCC 4.9 strict on switch enums)
-          echo '# GCC 4.9 compat: downgrade switch errors' >> drivers/gpu/drm/msm/Makefile
-          echo 'subdir-ccflags-y += -Wno-error=switch' >> drivers/gpu/drm/msm/Makefile
+          python3 ${{ github.workspace }}/fix_gpu_const.py
 
       - name: Build kernel
         run: |
           export PATH=${{ github.workspace }}/toolchain/bin:$PATH
           cd kernel_source
           N=$(nproc); [ $N -gt 4 ] && N=4
-          # Save make's real exit code (PIPESTATUS fix)
           make CC=aarch64-linux-android-gcc REAL_CC=aarch64-linux-android-gcc O=out ARCH=arm64 \
             CROSS_COMPILE=aarch64-linux-android- -j$N 2>&1 | tee build.log | tail -5; MSTATUS=${PIPESTATUS[0]}
           grep -E "error:|Error|fatal:" build.log | head -10
