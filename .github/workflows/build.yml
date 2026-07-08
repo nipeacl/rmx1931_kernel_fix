@@ -60,10 +60,8 @@ jobs:
           # Fix GCC 4.9 compatibility issues
           sed -i '/^#elif$/s//#else/' kernel/taskstats.c 2>/dev/null || true
           # Fix techpack/audio format warnings (GCC 4.9 -Werror=format)
-          sed -i 's/"%d\\b/"%zu/g' techpack/audio/dsp/q6afe.c 2>/dev/null || true
-          # Fix sm8150.c format issues - we'll add -Wno-error=format for this specific dir
-          echo '# GCC 4.9 format compat for techpack/audio' >> techpack/audio/Makefile
-          echo 'KBUILD_CFLAGS += -Wno-error=format' >> techpack/audio/Makefile
+          echo '# GCC 4.9 compat: downgrade selected warnings' >> techpack/audio/Makefile
+          echo 'subdir-ccflags-y += -Wno-error=format -Wno-error=maybe-uninitialized' >> techpack/audio/Makefile
 
       - name: Build kernel
         run: |
