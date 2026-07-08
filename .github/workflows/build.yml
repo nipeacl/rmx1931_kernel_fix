@@ -62,11 +62,12 @@ jobs:
           echo 'subdir-ccflags-y += -Wno-format -Wno-error=maybe-uninitialized' >> techpack/audio/Makefile
           echo '# GCC 4.9 compat' >> drivers/media/platform/msm/Makefile
           echo 'subdir-ccflags-y += -Wno-error=format' >> drivers/media/platform/msm/Makefile
-          # Fix onsemi OIS firmware (has C++ syntax, skip - not needed for boot)
+          # Fix onsemi OIS firmware (C++ syntax + FP code, skip - not needed for boot)
           for d in LC898124 LC898128; do
             m="drivers/media/platform/msm/camera_8150/cam_sensor_module/cam_ois/onsemi_fw/$d/Makefile"
             if [ -f "$m" ]; then
-              sed -i 's/^obj-y/obj-n/' "$m"
+              sed -i '/obj-y.*HighLevelCmd/d; /obj-y.*PhoneUpdate/d' "$m"
+              echo '# GCC 4.9: skipped HighLevelCmd.o PhoneUpdate.o (not boot-critical)' >> "$m"
             fi
           done
           python3 ${{ github.workspace }}/fix_gpu_const.py
