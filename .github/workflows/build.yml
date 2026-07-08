@@ -59,6 +59,11 @@ jobs:
             CROSS_COMPILE=aarch64-linux-android- olddefconfig 2>&1 | tail -1
           # Fix GCC 4.9 compatibility issues
           sed -i '/^#elif$/s//#else/' kernel/taskstats.c 2>/dev/null || true
+          # Fix techpack/audio format warnings (GCC 4.9 -Werror=format)
+          sed -i 's/"%d\\b/"%zu/g' techpack/audio/dsp/q6afe.c 2>/dev/null || true
+          # Fix sm8150.c format issues - we'll add -Wno-error=format for this specific dir
+          echo '# GCC 4.9 format compat for techpack/audio' >> techpack/audio/Makefile
+          echo 'KBUILD_CFLAGS += -Wno-error=format' >> techpack/audio/Makefile
 
       - name: Build kernel
         run: |
