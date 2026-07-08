@@ -57,6 +57,8 @@ jobs:
           python3 ${{ github.workspace }}/fix_config.py out/.config
           yes '' | make CC=aarch64-linux-android-gcc REAL_CC=aarch64-linux-android-gcc O=out ARCH=arm64 \
             CROSS_COMPILE=aarch64-linux-android- olddefconfig 2>&1 | tail -1
+          # Fix GCC 4.9 compatibility issues
+          sed -i '/^#elif$/s//#else/' kernel/taskstats.c 2>/dev/null || true
 
       - name: Build kernel
         run: |
