@@ -62,6 +62,8 @@ jobs:
           echo 'subdir-ccflags-y += -Wno-format -Wno-error=maybe-uninitialized' >> techpack/audio/Makefile
           echo '# GCC 4.9 compat' >> drivers/media/platform/msm/Makefile
           echo 'subdir-ccflags-y += -Wno-error=format' >> drivers/media/platform/msm/Makefile
+          # Copilot: __compiletime_object_size fix for GCC < 5 (__bad_copy_to)
+          python3 ${{ github.workspace }}/fix_compiler_gcc.py kernel_source/include/linux/compiler-gcc.h
           # Fix onsemi OIS firmware (C++ syntax + FP code, skip - not needed for boot)
           for d in LC898124 LC898128; do
             m="drivers/media/platform/msm/camera_8150/cam_sensor_module/cam_ois/onsemi_fw/$d/Makefile"
