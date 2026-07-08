@@ -1,4 +1,4 @@
-name: Build RMX1931 Kernel
+name: Build RMX1931 Kernel (GCC 4.9 CAF)
 
 on:
   push:
@@ -19,8 +19,15 @@ jobs:
             libncurses5-dev libssl-dev libxml2-utils lzop \
             rsync squashfs-tools xsltproc zip zlib1g-dev \
             libelf-dev device-tree-compiler \
-            gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu \
             cpio python3 2>&1 | tail -3
+
+      - name: Clone CAF GCC 4.9 toolchain
+        run: |
+          git clone --depth=1 \
+            https://github.com/LineageOS/android_prebuilts_gcc_linux-x86_aarch64_aarch64-linux-android-4.9 \
+            toolchain 2>&1 | tail -3
+          echo "Toolchain ready"
+          ls toolchain/bin/aarch64-linux-android-* | head -5
 
       - name: Clone kernel source
         run: |
@@ -33,27 +40,25 @@ jobs:
           python3 ${{ github.workspace }}/apply_patch1.py \
             kernel_source/drivers/power/oppo/oplus_charger.c
 
-      - name: Verify cross-compiler
+      - name: Configure
         run: |
-          aarch64-linux-gnu-gcc --version
-          aarch64-linux-gnu-ld --version
-
-      - name: Configure + workarounds
-        run: |
+          export PATH=${{ github.workspace }}/toolchain/bin:$PATH
           cd kernel_source
-          make O=out ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- samurai_defconfig
-          # Remove gcc-wrapper from CC line (uses tab, not space)
-          sed -i "s|CC\t\t= .*gcc-wrapper.py|CC\t\t= \$(REAL_CC)|" Makefile
-          # Also fix gcc-wrapper.py for Python 3 (replace Python 2 print syntax)
+          make O=out ARCH=arm64 \
+            CROSS_COMPILE=aarch64-linux-android- samurai_defconfig 2>&1 | tail -1
+          # Fix gcc-wrapper.py for Python 3 (host-side only)
           sed -i 's|print >> sys.stderr,|print(|;s|,e\.strerror|, file=sys.stderr, e.strerror)|' scripts/gcc-wrapper.py 2>/dev/null || true
           python3 ${{ github.workspace }}/fix_config.py out/.config
-          yes '' | make O=out ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- olddefconfig
+          yes '' | make O=out ARCH=arm64 \
+            CROSS_COMPILE=aarch64-linux-android- olddefconfig 2>&1 | tail -1
 
       - name: Build kernel
         run: |
+          export PATH=${{ github.workspace }}/toolchain/bin:$PATH
           cd kernel_source
           N=$(nproc); [ $N -gt 4 ] && N=4
-          make O=out ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- -j$N 2>&1 | tail -30
+          make O=out ARCH=arm64 \
+            CROSS_COMPILE=aarch64-linux-android- -j$N 2>&1 | tail -30
           exit ${PIPESTATUS[0]}
 
       - name: Repack boot.img
