@@ -58,9 +58,9 @@ jobs:
             CROSS_COMPILE=aarch64-linux-android- olddefconfig 2>&1 | tail -1
           # Fix GCC 4.9 compatibility
           sed -i '/^#elif$/s//#else/' kernel/taskstats.c 2>/dev/null || true
-          # Fix techpack/audio format warnings (GCC 4.9 -Werror=format)
-          echo '# GCC 4.9 compat: downgrade format warnings' >> techpack/audio/Makefile
-          echo 'subdir-ccflags-y += -Wno-error=format-extra-args -Wno-error=maybe-uninitialized' >> techpack/audio/Makefile
+          # Fix techpack/audio format warnings (GCC 4.9)
+          echo '# GCC 4.9 compat: disable -Werror for this subtree' >> techpack/audio/Makefile
+          echo 'subdir-ccflags-y += -Wno-format -Wno-error=maybe-uninitialized' >> techpack/audio/Makefile
           # Fix msm GPU case label errors (GCC 4.9 strict on switch enums)
           echo '# GCC 4.9 compat: downgrade switch errors' >> drivers/gpu/drm/msm/Makefile
           echo 'subdir-ccflags-y += -Wno-error=switch' >> drivers/gpu/drm/msm/Makefile
