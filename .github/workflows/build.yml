@@ -58,18 +58,9 @@ jobs:
             CROSS_COMPILE=aarch64-linux-android- olddefconfig 2>&1 | tail -1
           # Fix GCC 4.9 compatibility
           sed -i '/^#elif$/s//#else/' kernel/taskstats.c 2>/dev/null || true
-          # Disable FORTIFY_SOURCE for GCC < 5.0 (Copilot's proper fix)
-          printf '%s\n' \
-            '# Disable FORTIFY for GCC < 5.0' \
-            'ifeq ($$(shell $$(CC) -dumpversion | cut -d. -f1),4)' \
-            '  KBUILD_CFLAGS := $$(filter-out -D_FORTIFY_SOURCE=%,$$(KBUILD_CFLAGS))' \
-            'endif' \
-            >> Makefile
           # Fix techpack/audio format warnings (GCC 4.9 -Werror=format)
-          printf '%s\n' \
-            '# GCC 4.9 compat: downgrade selected warnings' \
-            'subdir-ccflags-y += -Wno-error=format -Wno-error=maybe-uninitialized' \
-            >> techpack/audio/Makefile
+          echo '# GCC 4.9 compat: downgrade selected warnings' >> techpack/audio/Makefile
+          echo 'subdir-ccflags-y += -Wno-error=format -Wno-error=maybe-uninitialized' >> techpack/audio/Makefile
 
       - name: Build kernel
         run: |
