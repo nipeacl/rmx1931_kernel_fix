@@ -66,7 +66,7 @@ jobs:
           for d in LC898124 LC898128; do
             m="drivers/media/platform/msm/camera_8150/cam_sensor_module/cam_ois/onsemi_fw/$d/Makefile"
             if [ -f "$m" ]; then
-              sed -i '/obj-y.*HighLevelCmd/d; /obj-y.*PhoneUpdate/d' "$m"
+              sed -i '/HighLevelCmd/d; /PhoneUpdate/d' "$m"
               echo '# GCC 4.9: skipped HighLevelCmd.o PhoneUpdate.o (not boot-critical)' >> "$m"
             fi
           done
