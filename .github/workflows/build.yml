@@ -68,8 +68,9 @@ jobs:
           cd kernel_source
           N=$(nproc); [ $N -gt 4 ] && N=4
           make CC=aarch64-linux-android-gcc REAL_CC=aarch64-linux-android-gcc O=out ARCH=arm64 \
-            CROSS_COMPILE=aarch64-linux-android- -j$N 2>&1 | tee build.log | tail -5; MSTATUS=${PIPESTATUS[0]}
-          grep -E "error:|Error|fatal:" build.log | head -10
+            CROSS_COMPILE=aarch64-linux-android- -j$N 2>&1 | tee build.log | tail -200; MSTATUS=${PIPESTATUS[0]}
+          grep -E "error:|Error|fatal:" build.log | grep -v "grep\|TPD_INFO" | head -20
+          echo "--- Build exit code: $MSTATUS ---"
           exit $MSTATUS
 
       - name: Repack boot.img
