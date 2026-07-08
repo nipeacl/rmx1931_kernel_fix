@@ -59,8 +59,11 @@ jobs:
           # Fix GCC 4.9 compatibility
           sed -i '/^#elif$/s//#else/' kernel/taskstats.c 2>/dev/null || true
           # Fix techpack/audio format warnings (GCC 4.9 -Werror=format)
-          echo '# GCC 4.9 compat: downgrade selected warnings' >> techpack/audio/Makefile
-          echo 'subdir-ccflags-y += -Wno-error=format -Wno-error=maybe-uninitialized' >> techpack/audio/Makefile
+          echo '# GCC 4.9 compat: downgrade format warnings' >> techpack/audio/Makefile
+          echo 'subdir-ccflags-y += -Wno-error=format-extra-args -Wno-error=maybe-uninitialized' >> techpack/audio/Makefile
+          # Fix msm GPU case label errors (GCC 4.9 strict on switch enums)
+          echo '# GCC 4.9 compat: downgrade switch errors' >> drivers/gpu/drm/msm/Makefile
+          echo 'subdir-ccflags-y += -Wno-error=switch' >> drivers/gpu/drm/msm/Makefile
 
       - name: Build kernel
         run: |
