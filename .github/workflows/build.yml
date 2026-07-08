@@ -48,6 +48,8 @@ jobs:
             CROSS_COMPILE=aarch64-linux-android- samurai_defconfig 2>&1 | tail -1
           # Fix gcc-wrapper.py for Python 3 (host-side only)
           sed -i 's|print >> sys.stderr,|print(|;s|,e\.strerror|, file=sys.stderr, e.strerror)|' scripts/gcc-wrapper.py 2>/dev/null || true
+          # Remove gcc-wrapper from Makefile CC line (host-side wrapper, not needed)
+          sed -i "s|CC\\t\\t= .*gcc-wrapper.py|CC\\t\\t= \$(REAL_CC)|" Makefile 2>/dev/null || true
           python3 ${{ github.workspace }}/fix_config.py out/.config
           yes '' | make O=out ARCH=arm64 \
             CROSS_COMPILE=aarch64-linux-android- olddefconfig 2>&1 | tail -1
