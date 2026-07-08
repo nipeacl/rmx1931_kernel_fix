@@ -54,6 +54,7 @@ jobs:
           cd kernel_source
           N=$(nproc); [ $N -gt 4 ] && N=4
           make O=out ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- -j$N 2>&1 | tail -30
+          exit ${PIPESTATUS[0]}
 
       - name: Repack boot.img
         run: |
