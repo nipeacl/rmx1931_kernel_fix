@@ -60,6 +60,8 @@ jobs:
           sed -i '/^#elif$/s//#else/' kernel/taskstats.c 2>/dev/null || true
           echo '# GCC 4.9 compat: disable -Werror for subtree' >> techpack/audio/Makefile
           echo 'subdir-ccflags-y += -Wno-format -Wno-error=maybe-uninitialized' >> techpack/audio/Makefile
+          echo '# GCC 4.9 compat' >> drivers/media/platform/msm/Makefile
+          echo 'subdir-ccflags-y += -Wno-error=format' >> drivers/media/platform/msm/Makefile
           python3 ${{ github.workspace }}/fix_gpu_const.py
 
       - name: Build kernel
@@ -68,7 +70,7 @@ jobs:
           cd kernel_source
           N=$(nproc); [ $N -gt 4 ] && N=4
           make CC=aarch64-linux-android-gcc REAL_CC=aarch64-linux-android-gcc O=out ARCH=arm64 \
-            CROSS_COMPILE=aarch64-linux-android- -j$N 2>&1 | tee build.log | tail -200; MSTATUS=${PIPESTATUS[0]}
+            CROSS_COMPILE=aarch64-linux-android- -j$N Image modules 2>&1 | tee build.log | tail -200; MSTATUS=${PIPESTATUS[0]}
           grep -E "error:|Error|fatal:" build.log | grep -v "grep\|TPD_INFO" | head -20
           echo "--- Build exit code: $MSTATUS ---"
           exit $MSTATUS
