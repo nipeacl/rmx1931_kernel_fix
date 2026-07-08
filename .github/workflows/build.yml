@@ -28,7 +28,6 @@ jobs:
             toolchain 2>&1 | tail -3
           echo "Toolchain ready"
           ls toolchain/bin/aarch64-linux-android-* | head -5
-          # Create real- symlinks for gcc-wrapper compatibility
           cd toolchain/bin
           for f in aarch64-linux-android-*; do
             if [ ! -f "real-$f" ]; then
@@ -57,28 +56,43 @@ jobs:
           python3 ${{ github.workspace }}/fix_config.py out/.config
           yes '' | make CC=aarch64-linux-android-gcc REAL_CC=aarch64-linux-android-gcc O=out ARCH=arm64 \
             CROSS_COMPILE=aarch64-linux-android- olddefconfig 2>&1 | tail -1
-          # Fix GCC 4.9 compatibility issues
+          # Fix GCC 4.9 compatibility
           sed -i '/^#elif$/s//#else/' kernel/taskstats.c 2>/dev/null || true
+          # Disable FORTIFY_SOURCE for GCC < 5.0 (Copilot's proper fix)
+          printf '%s\n' \
+            '# Disable FORTIFY for GCC < 5.0' \
+            'ifeq ($$(shell $$(CC) -dumpversion | cut -d. -f1),4)' \
+            '  KBUILD_CFLAGS := $$(filter-out -D_FORTIFY_SOURCE=%,$$(KBUILD_CFLAGS))' \
+            'endif' \
+            >> Makefile
+          # Fix techpack/audio format warnings (GCC 4.9 -Werror=format)
+          printf '%s\n' \
+            '# GCC 4.9 compat: downgrade selected warnings' \
+            'subdir-ccflags-y += -Wno-error=format -Wno-error=maybe-uninitialized' \
+            >> techpack/audio/Makefile
 
       - name: Build kernel
         run: |
           export PATH=${{ github.workspace }}/toolchain/bin:$PATH
           cd kernel_source
           N=$(nproc); [ $N -gt 4 ] && N=4
+          # Save make's real exit code (PIPESTATUS fix)
           make CC=aarch64-linux-android-gcc REAL_CC=aarch64-linux-android-gcc O=out ARCH=arm64 \
-            CROSS_COMPILE=aarch64-linux-android- -j$N 2>&1 | tee build.log | tail -5
-          grep -E "error:|Error|fatal:" build.log | head -10; exit ${PIPESTATUS[0]}
+            CROSS_COMPILE=aarch64-linux-android- -j$N 2>&1 | tee build.log | tail -5; MSTATUS=${PIPESTATUS[0]}
+          grep -E "error:|Error|fatal:" build.log | head -10
+          exit $MSTATUS
 
       - name: Repack boot.img
         run: |
           cd kernel_source/out/arch/arm64/boot
-          ls -la | grep -E "Image|dtb"
-          KERNEL=$(ls Image*dtb* 2>/dev/null | head -1)
+          ls -la | grep -E "Image|dtb" || true
+          KERNEL=$(ls Image*dtb* 2>/dev/null | head -1 || true)
           if [ -z "$KERNEL" ]; then
-            KERNEL=$(ls Image* 2>/dev/null | head -1)
+            KERNEL=$(ls Image* 2>/dev/null | head -1 || true)
           fi
           if [ -z "$KERNEL" ]; then
-            echo "No kernel image found! Files:"; ls
+            echo "No kernel image found! Files:"
+            ls
             exit 1
           fi
           cp "$KERNEL" ${{ github.workspace }}/Image.gz-dtb
