@@ -52,17 +52,10 @@ jobs:
         run: |
           export PATH=${{ github.workspace }}/toolchain/bin:$PATH
           cd kernel_source
-          # Remove gcc-wrapper FIRST before any make command
-          sed -i "s|CC\\t\\t= .*gcc-wrapper.py|CC\\t\\t= \$(REAL_CC)|" Makefile 2>/dev/null || true
-          # Replace gcc-wrapper.py with pass-through version
-          cp ${{ github.workspace }}/gcc-wrapper-pass.py scripts/gcc-wrapper.py
-          chmod +x scripts/gcc-wrapper.py
-          # Fix gcc-wrapper.py for Python 3 (host-side only) - still exists in scripts/
-          sed -i 's|print >> sys.stderr,|print(|;s|,e\\.strerror|, file=sys.stderr, e.strerror)|' scripts/gcc-wrapper.py 2>/dev/null || true
-          make O=out ARCH=arm64 \
+          make CC=aarch64-linux-android-gcc REAL_CC=aarch64-linux-android-gcc O=out ARCH=arm64 \
             CROSS_COMPILE=aarch64-linux-android- samurai_defconfig 2>&1 | tail -1
           python3 ${{ github.workspace }}/fix_config.py out/.config
-          yes '' | make O=out ARCH=arm64 \
+          yes '' | make CC=aarch64-linux-android-gcc REAL_CC=aarch64-linux-android-gcc O=out ARCH=arm64 \
             CROSS_COMPILE=aarch64-linux-android- olddefconfig 2>&1 | tail -1
 
       - name: Build kernel
@@ -70,7 +63,7 @@ jobs:
           export PATH=${{ github.workspace }}/toolchain/bin:$PATH
           cd kernel_source
           N=$(nproc); [ $N -gt 4 ] && N=4
-          make O=out ARCH=arm64 \
+          make CC=aarch64-linux-android-gcc REAL_CC=aarch64-linux-android-gcc O=out ARCH=arm64 \
             CROSS_COMPILE=aarch64-linux-android- -j$N 2>&1 | tail -30
           exit ${PIPESTATUS[0]}
 
