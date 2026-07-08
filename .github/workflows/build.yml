@@ -54,6 +54,9 @@ jobs:
           cd kernel_source
           # Remove gcc-wrapper FIRST before any make command
           sed -i "s|CC\\t\\t= .*gcc-wrapper.py|CC\\t\\t= \$(REAL_CC)|" Makefile 2>/dev/null || true
+          # Replace gcc-wrapper.py with pass-through version
+          cp ${{ github.workspace }}/gcc-wrapper-pass.py scripts/gcc-wrapper.py
+          chmod +x scripts/gcc-wrapper.py
           # Fix gcc-wrapper.py for Python 3 (host-side only) - still exists in scripts/
           sed -i 's|print >> sys.stderr,|print(|;s|,e\\.strerror|, file=sys.stderr, e.strerror)|' scripts/gcc-wrapper.py 2>/dev/null || true
           make O=out ARCH=arm64 \
