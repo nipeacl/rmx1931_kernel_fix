@@ -1,0 +1,61 @@
+name: Build RMX1931 Kernel
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install deps
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq \
+            bc bison build-essential curl flex git liblz4-tool \
+            libncurses5-dev libssl-dev libxml2-utils lzop \
+            rsync squashfs-tools xsltproc zip zlib1g-dev \
+            libelf-dev device-tree-compiler \
+            gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu \
+            cpio python3 python 2>&1 | tail -3
+
+      - name: Clone kernel source
+        run: |
+          git clone --depth=1 -b lineage-20 \
+            https://github.com/HyperTeam/android_kernel_realme_sm8150 \
+            kernel_source
+
+      - name: Apply charger fix
+        run: |
+          python3 ${{ github.workspace }}/apply_patch1.py \
+            kernel_source/drivers/power/oppo/oplus_charger.c
+
+      - name: Configure + workarounds
+        run: |
+          cd kernel_source
+          make O=out ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- samurai_defconfig
+          sed -i "s|CC[[:space:]]*=.*python.*gcc-wrapper.*REAL_CC|CC = (REAL_CC)|" Makefile
+          python3 ${{ github.workspace }}/fix_config.py out/.config
+          yes '' | make O=out ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- olddefconfig
+
+      - name: Build kernel
+        run: |
+          cd kernel_source
+          N=$(nproc); [ $N -gt 4 ] && N=4
+          make O=out ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- -j$N 2>&1 | tail -30
+
+      - name: Repack boot.img
+        run: |
+          cp kernel_source/out/arch/arm64/boot/Image.gz-dtb .
+          python3 ${{ github.workspace }}/repack_boot.py
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: rmx1931_boot_patched
+          path: |
+            boot_patched.img
+            Image.gz-dtb
