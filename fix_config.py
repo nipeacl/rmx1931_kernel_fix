@@ -10,6 +10,7 @@ with open(path) as f:
 # Disable problematic options for GCC 4.9 CAF toolchain
 fixes = {
     'CONFIG_FORTIFY_SOURCE': 'n',
+    'CONFIG_HARDENED_USERCOPY': 'n',
     'CONFIG_CC_STACKPROTECTOR_STRONG': 'n',
     'CONFIG_CC_STACKPROTECTOR_REGULAR': 'n',
     'CONFIG_CC_STACKPROTECTOR_NONE': 'y',
