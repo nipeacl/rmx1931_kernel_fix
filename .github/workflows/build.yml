@@ -62,6 +62,14 @@ jobs:
           echo 'subdir-ccflags-y += -Wno-format -Wno-error=maybe-uninitialized' >> techpack/audio/Makefile
           echo '# GCC 4.9 compat' >> drivers/media/platform/msm/Makefile
           echo 'subdir-ccflags-y += -Wno-error=format' >> drivers/media/platform/msm/Makefile
+          # Fix onsemi OIS firmware (has C++ syntax, GCC 4.9 needs -x c++)
+          for d in LC898124 LC898128; do
+            m="drivers/media/platform/msm/camera_8150/cam_sensor_module/cam_ois/onsemi_fw/$d/Makefile"
+            if [ -f "$m" ]; then
+              echo "CFLAGS_HighLevelCmd.o := -x c++ -std=gnu++98 -Wno-error" >> "$m"
+              echo "CFLAGS_PhoneUpdate.o := -x c++ -std=gnu++98 -Wno-error" >> "$m"
+            fi
+          done
           python3 ${{ github.workspace }}/fix_gpu_const.py
 
       - name: Build kernel
