@@ -20,7 +20,7 @@ jobs:
             rsync squashfs-tools xsltproc zip zlib1g-dev \
             libelf-dev device-tree-compiler \
             gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu \
-            cpio python3 python 2>&1 | tail -3
+            cpio python3 2>&1 | tail -3
 
       - name: Clone kernel source
         run: |
@@ -32,6 +32,11 @@ jobs:
         run: |
           python3 ${{ github.workspace }}/apply_patch1.py \
             kernel_source/drivers/power/oppo/oplus_charger.c
+
+      - name: Verify cross-compiler
+        run: |
+          aarch64-linux-gnu-gcc --version
+          aarch64-linux-gnu-ld --version
 
       - name: Configure + workarounds
         run: |
