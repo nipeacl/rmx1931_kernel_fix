@@ -28,6 +28,14 @@ jobs:
             toolchain 2>&1 | tail -3
           echo "Toolchain ready"
           ls toolchain/bin/aarch64-linux-android-* | head -5
+          # Create real- symlinks for gcc-wrapper compatibility
+          cd toolchain/bin
+          for f in aarch64-linux-android-*; do
+            if [ ! -f "real-$f" ]; then
+              ln -sf "$f" "real-$f"
+            fi
+          done
+          echo "real- symlinks created"
 
       - name: Clone kernel source
         run: |
