@@ -71,7 +71,16 @@ jobs:
 
       - name: Repack boot.img
         run: |
-          cp kernel_source/out/arch/arm64/boot/Image.gz-dtb .
+          ls -la kernel_source/out/arch/arm64/boot/ | grep -E "Image|dtb"
+          KERNEL=$(ls kernel_source/out/arch/arm64/boot/Image*dtb* 2>/dev/null | head -1)
+          if [ -z "$KERNEL" ]; then
+            KERNEL=$(ls kernel_source/out/arch/arm64/boot/Image* 2>/dev/null | head -1)
+          fi
+          if [ -z "$KERNEL" ]; then
+            echo "No kernel image found! Files:"; ls kernel_source/out/arch/arm64/boot/
+            exit 1
+          fi
+          cp "$KERNEL" Image.gz-dtb
           python3 ${{ github.workspace }}/repack_boot.py
 
       - name: Upload artifacts
